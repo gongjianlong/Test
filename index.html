@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>书签收藏家 · 龚老师课堂</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            background: #f5f7fb;
+            height: 100vh;
+            overflow: hidden;
+            color: #1e2a3e;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+            background: #ffffff;
+        }
+
+        .top-bar {
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #eef2f8;
+            padding: 12px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            z-index: 20;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon { font-size: 28px; }
+        .brand h1 {
+            font-size: 1.45rem;
+            font-weight: 650;
+            background: linear-gradient(135deg, #1f3b4c, #2b6c8f);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .tool-buttons { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .btn {
+            border: none;
+            background: #f1f4f9;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #2c4e6e;
+        }
+        .btn-primary { background: #2c7da0; color: white; }
+        .btn-primary:hover { background: #1f5f7a; transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid #dce5ef; }
+        .btn-outline:hover { background: #f8fafc; border-color: #2c7da0; }
+        .user-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f1f4f9;
+            padding: 4px 12px 4px 16px;
+            border-radius: 40px;
+        }
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #2c4e6e;
+        }
+        .user-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #2c7da0;
+        }
+        .user-btn:hover { background: #e2e8f2; }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background: #f8fafd;
+            min-height: 0;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #ffffff;
+            border-right: 1px solid #eef2f8;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px 18px 12px 20px;
+            border-bottom: 1px solid #eff3f9;
+            flex-shrink: 0;
+        }
+        .sidebar-header h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #6a7f9f;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        .add-folder-row { display: flex; gap: 10px; }
+        .add-folder-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #e2eaf1;
+            border-radius: 32px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .add-folder-row input:focus { border-color: #2c7da0; box-shadow: 0 0 0 3px rgba(44,125,160,0.1); }
+        .icon-btn-sm {
+            background: #eef3fc;
+            border: none;
+            width: 38px;
+            border-radius: 38px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #2c7da0;
+        }
+        .icon-btn-sm:hover { background: #2c7da0; color: white; }
+
+        .folder-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 12px 24px 16px;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 12px;
+            margin-bottom: 6px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: transparent;
+            user-select: none;
+        }
+        .folder-item.dragging { opacity: 0.5; background: #eef3fc; }
+        .folder-item.drag-over { border-top: 2px solid #2c7da0; margin-top: -2px; }
+        .folder-item.active { background: #eef5ff; }
+        .folder-item:hover:not(.active) { background: #f5f9ff; }
+
+        .folder-info { display: flex; align-items: center; gap: 8px; flex: 1; overflow: hidden; }
+        .drag-handle { cursor: grab; color: #9aaebf; font-size: 1rem; padding: 0 4px; opacity: 0.5; }
+        .folder-item:hover .drag-handle { opacity: 1; }
+        .drag-handle:active { cursor: grabbing; }
+        .folder-info-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .folder-name {
+            font-weight: 550;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .folder-name.editing {
+            background: white;
+            border: 1px solid #2c7da0;
+            border-radius: 8px;
+            padding: 4px 8px;
+            outline: none;
+        }
+        .folder-count {
+            background: #eef2f9;
+            border-radius: 30px;
+            padding: 2px 9px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #4f6f8f;
+            flex-shrink: 0;
+        }
+        .folder-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+        .rename-folder-btn, .del-folder {
+            background: transparent;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            opacity: 0.5;
+            width: 28px;
+            height: 28px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .rename-folder-btn:hover { opacity: 1; background: #eef3fc; color: #2c7da0; }
+        .del-folder:hover { opacity: 1; background: #ffe8e8; color: #e15554; }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f8fafd;
+            min-height: 0;
+        }
+
+        .content-header {
+            padding: 16px 28px 12px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: #f8fafd;
+            border-bottom: 1px solid #eef2f8;
+            flex-shrink: 0;
+        }
+        .current-folder-title {
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(145deg, #1f3b4c, #2f6b8c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .header-actions { display: flex; gap: 12px; align-items: center; }
+        .add-card-btn {
+            background: #2c7da0;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .add-card-btn:hover { background: #1b5f7a; }
+        .toggle-new-badge-btn {
+            background: #f5f7fb;
+            border: 1px solid #e2eaf1;
+            padding: 8px 16px;
+            border-radius: 40px;
+            color: #5a6e8c;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .toggle-new-badge-btn:hover {
+            background: #eef3fc;
+            border-color: #2c7da0;
+            color: #2c7da0;
+        }
+        .toggle-new-badge-btn.active {
+            background: #2c7da0;
+            border-color: #2c7da0;
+            color: white;
+        }
+        .settings-btn {
+            background: #eef2f9;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 40px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .settings-btn:hover { background: #e2e8f2; transform: rotate(30deg); }
+
+        .settings-panel {
+            position: fixed;
+            top: 80px;
+            right: 28px;
+            width: 280px;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.15);
+            z-index: 200;
+            display: none;
+            overflow: hidden;
+        }
+        .settings-panel.active { display: block; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .settings-header { padding: 18px 20px; background: #fafcff; border-bottom: 1px solid #eff3f9; font-weight: 600; }
+        .settings-body { padding: 16px 20px 24px; }
+        .style-option { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; cursor: pointer; border-radius: 16px; }
+        .style-option:hover { background: #f5f9ff; padding-left: 8px; }
+        .style-name { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
+        .radio-custom { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #cbd5e1; background: white; }
+        .style-option.active .radio-custom { border-color: #2c7da0; background: #2c7da0; box-shadow: inset 0 0 0 3px white; }
+
+        .view-scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-height: 0;
+        }
+
+        /* 瀑布流 - 动态多列布局（最短列优先） */
+        .view-waterfall {
+            padding: 24px 28px 40px 28px;
+        }
+        .waterfall-masonry {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        .waterfall-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .waterfall-column .bookmark-card {
+            width: 100%;
+            margin-bottom: 0;
+            break-inside: avoid;
+        }
+        .view-waterfall .thumbnail-container {
+            aspect-ratio: auto;
+            height: auto;
+            background: #f2f5fa;
+        }
+        .view-waterfall .thumbnail-img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 平铺视图 */
+        .view-grid {
+            padding: 24px 28px 40px 28px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .view-grid .thumbnail-container { aspect-ratio: 4 / 3; }
+        .view-grid .thumbnail-img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 列表视图 */
+        .view-list {
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .view-list .bookmark-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border-radius: 20px;
+            padding: 12px 20px;
+            border: 1px solid #edf2f9;
+            gap: 16px;
+        }
+        .view-list .thumbnail-container {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            aspect-ratio: 1/1;
+            background: #f2f5fa;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .view-list .thumbnail-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+        .view-list .card-info-area {
+            flex: 1;
+            padding: 0;
+            min-width: 0;
+        }
+        .view-list .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+        .view-list .card-title .type-icon { font-size: 0.9rem; flex-shrink: 0; }
+        .view-list .card-title .location-badge {
+            font-size: 0.7rem;
+            color: #8aa0bc;
+            background: #f5f7fb;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .view-list .card-title .title-text {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e2a3e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .view-list .card-title .note-badge {
+            font-size: 0.7rem;
+            color: #8aa0bc;
+            background: #f5f7fb;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .view-list .card-url {
+            font-size: 0.7rem;
+            color: #7f95b0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0;
+        }
+        .view-list .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 0;
+            border-top: none;
+            padding-top: 0;
+            flex-shrink: 0;
+        }
+        .view-list .note-preview { display: none; }
+        .view-list .time-badge-inline { display: none; }
+
+        /* 小图标视图 */
+        .view-icons {
+            padding: 24px 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            align-content: flex-start;
+        }
+        .view-icons .bookmark-card {
+            width: 110px;
+            text-align: center;
+            background: transparent;
+            box-shadow: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .view-icons .bookmark-card:hover { transform: translateY(-5px); }
+        .view-icons .thumbnail-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            aspect-ratio: 1/1;
+        }
+        .view-icons .thumbnail-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .view-icons .card-info-area,
+        .view-icons .card-title,
+        .view-icons .card-url,
+        .view-icons .card-actions,
+        .view-icons .note-preview,
+        .view-icons .time-badge,
+        .view-icons .path-icon,
+        .view-icons .card-note-badge,
+        .view-icons .new-today::before {
+            display: none !important;
+        }
+        .view-icons .bookmark-card.new-today::before { display: none; }
+        .view-icons .bookmark-card {
+            position: relative;
+        }
+        .view-icons .bookmark-card:hover::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .view-icons .bookmark-card:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #2c3e50;
+            margin-bottom: 2px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* 通用卡片样式 */
+        .bookmark-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #edf2f9;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        .bookmark-card:hover { transform: translateY(-2px); }
+        .bookmark-card.new-today::before {
+            content: "最新采集";
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .hide-new-tags .bookmark-card.new-today::before { display: none; }
+
+        .thumbnail-container { width: 100%; background: #f2f5fa; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .thumbnail-img { width: 100%; display: block; }
+        .card-info-area { padding: 12px 14px 14px; }
+        .card-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .path-icon { font-size: 0.9rem; }
+        .card-url {
+            font-size: 0.7rem;
+            color: #7f95b0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .note-preview {
+            font-size: 0.7rem;
+            color: #5a6e8c;
+            background: #f8f9fc;
+            padding: 6px 8px;
+            border-radius: 12px;
+            margin-top: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            margin-top: 8px;
+            border-top: 1px solid #f0f4fa;
+            padding-top: 8px;
+        }
+        .action-icon {
+            background: none;
+            border: none;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: #8aa0bc;
+            padding: 4px 8px;
+            border-radius: 30px;
+            transition: 0.2s;
+        }
+        .action-icon:hover { color: #2c7da0; background: #eef3fc; }
+        .favorite-icon {
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.2s;
+            background: none;
+            border: none;
+            padding: 4px 6px;
+            border-radius: 30px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+        }
+        .favorite-icon:hover { transform: scale(1.1); }
+        .favorite-icon .heart-unfilled {
+            color: #d1d5db;
+            font-size: 1.2rem;
+        }
+        .favorite-icon .heart-filled {
+            color: #ef4444;
+            display: none;
+            font-size: 1.2rem;
+        }
+        .favorite-icon.active .heart-unfilled { display: none; }
+        .favorite-icon.active .heart-filled { display: inline; }
+        .time-badge-inline {
+            font-size: 0.7rem;
+            color: #8aa0bc;
+            background: #f5f7fb;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: auto;
+        }
+        .download-btn {
+            background: #2c7da0;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: white;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .download-btn:hover {
+            background: #1f5f7a;
+            transform: scale(1.02);
+        }
+        .empty-message { width: 100%; text-align: center; padding: 70px 20px; color: #95adc7; font-size: 1rem; }
+
+        /* 弹窗、浮窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .unified-modal {
+            background: white;
+            width: 520px;
+            max-width: 90vw;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            overflow: hidden;
+            animation: modalSlideIn 0.2s ease;
+        }
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .unified-modal-header {
+            padding: 20px 24px;
+            background: #ffffff;
+            border-bottom: 1px solid #eef2f8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .unified-modal-header h3 { font-size: 1.2rem; font-weight: 600; color: #1e2a3e; margin: 0; }
+        .unified-modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #8aa0bc;
+            width: 32px;
+            height: 32px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .unified-modal-close:hover { background: #f0f4fa; color: #2c4e6e; }
+        .unified-modal-body { padding: 24px; max-height: 60vh; overflow-y: auto; }
+        .unified-modal-footer {
+            padding: 16px 24px;
+            background: #fafcff;
+            border-top: 1px solid #eef2f8;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .unified-modal-btn {
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+        .unified-modal-btn-primary { background: #2c7da0; color: white; }
+        .unified-modal-btn-primary:hover { background: #1f5f7a; transform: translateY(-1px); }
+        .unified-modal-btn-secondary { background: #eef2f9; color: #4a627a; }
+        .unified-modal-btn-secondary:hover { background: #e2e8f2; }
+        .unified-modal-btn-danger { background: #e15554; color: white; }
+        .unified-modal-btn-danger:hover { background: #c23d3d; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 500; font-size: 0.85rem; color: #4a627a; margin-bottom: 8px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2eaf1;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            outline: none;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #2c7da0;
+            box-shadow: 0 0 0 3px rgba(44,125,160,0.1);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .checkbox-group input {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+        }
+        .checkbox-group label {
+            font-size: 0.85rem;
+            color: #4a627a;
+            cursor: pointer;
+            margin: 0;
+        }
+        .clipboard-hint {
+            background: #eef3fc;
+            border-radius: 20px;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            color: #2c7da0;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .thumb-preview {
+            margin-top: 12px;
+            background: #f8fafd;
+            border-radius: 20px;
+            padding: 16px;
+            text-align: center;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border: 1px dashed #e2eaf1;
+        }
+        .thumb-preview img { max-width: 100%; max-height: 120px; border-radius: 12px; object-fit: contain; }
+        
+        /* 统一浮窗样式 - 与整体UI风格一致 */
+        .unified-floating {
+            position: fixed;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            z-index: 10000;
+            min-width: 480px;
+            min-height: 400px;
+            resize: both;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: floatFadeIn 0.2s ease;
+            border: 1px solid #eef2f8;
+        }
+        @keyframes floatFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .floating-header {
+            background: #ffffff;
+            border-bottom: 1px solid #eef2f8;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: move;
+            user-select: none;
+            border-radius: 28px 28px 0 0;
+        }
+        .floating-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e2a3e;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .floating-title-icon { font-size: 1.2rem; }
+        .floating-controls {
+            display: flex;
+            gap: 8px;
+        }
+        .floating-controls button {
+            background: #f1f4f9;
+            border: none;
+            color: #2c4e6e;
+            cursor: pointer;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .floating-controls button:hover {
+            background: #2c7da0;
+            color: white;
+            transform: scale(1.02);
+        }
+        .floating-content {
+            flex: 1;
+            overflow: auto;
+            background: #f8fafd;
+        }
+        .floating-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        .local-viewer {
+            padding: 32px;
+            text-align: center;
+            color: #5a6e8c;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background: #f8fafd;
+        }
+        .local-viewer .folder-icon { font-size: 4rem; margin-bottom: 8px; }
+        .local-viewer .path-text {
+            font-family: monospace;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 16px;
+            word-break: break-all;
+            max-width: 90%;
+            border: 1px solid #e2eaf1;
+            color: #2c7da0;
+            font-size: 0.85rem;
+        }
+        .local-viewer .button-group { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+        .local-viewer .action-btn {
+            background: #2c7da0;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .local-viewer .action-btn:hover { background: #1f5f7a; transform: translateY(-2px); }
+        .local-viewer .copy-btn { background: #5a6e8c; }
+        .local-viewer .copy-btn:hover { background: #3d526e; }
+        .copy-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            z-index: 10001;
+            animation: fadeOut 2s ease forwards;
+            pointer-events: none;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            cursor: se-resize;
+            background: linear-gradient(135deg, transparent 50%, #cbd5e1 50%);
+            border-radius: 0 0 28px 0;
+        }
+        .path-input-wrapper { display: flex; gap: 12px; align-items: center; }
+        .browse-btn, .upload-btn {
+            background: #eef3fc;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 28px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .browse-btn:hover, .upload-btn:hover { background: #2c7da0; color: white; }
+        .folder-select-dialog {
+            width: 100%;
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid #e2eaf1;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="top-bar">
+        <div class="brand"><span class="brand-icon">🎨</span><h1>书签收藏家 · 龚老师课堂</h1></div>
+        <div class="tool-buttons">
+            <button id="exportDataBtn" class="btn btn-outline">📤 导出</button>
+            <button id="importDataBtn" class="btn btn-outline">📥 导入</button>
+            <button id="demoDataBtn" class="btn btn-outline">✨ 示例</button>
+            <button id="clearStorageBtn" class="btn btn-outline">🗑️ 清空</button>
+            <div id="userWidget" class="user-area" style="display: none;"></div>
+        </div>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="sidebar-header"><h3>📂 收藏夹 (拖拽排序 | ✏️ 重命名)</h3><div class="add-folder-row"><input type="text" id="folderNameInput" placeholder="新文件夹"><button id="createFolderBtn" class="icon-btn-sm">+</button></div></div>
+            <div class="folder-scroll" id="folderList"></div>
+        </div>
+        <div class="content-area">
+            <div class="content-header"><div class="current-folder-title" id="currentFolderNameDisplay">所有收藏</div><div class="header-actions"><button id="openAddModalBtn" class="add-card-btn">+ 添加收藏</button><button id="toggleNewBadgeBtn" class="toggle-new-badge-btn">✨ 隐藏最新标签</button><button id="settingsToggleBtn" class="settings-btn">⚙️</button></div></div>
+            <div id="viewScrollContainer" class="view-scroll-container"><div id="viewContainer"></div></div>
+        </div>
+    </div>
+</div>
+<div id="settingsPanel" class="settings-panel"><div class="settings-header">✨ 显示风格</div><div class="settings-body"><div class="style-option" data-style="waterfall"><div class="style-name"><span>🌊</span> 瀑布流显示</div><div class="radio-custom"></div></div><div class="style-option" data-style="grid"><div class="style-name"><span>📐</span> 平铺显示</div><div class="radio-custom"></div></div><div class="style-option" data-style="list"><div class="style-name"><span>📋</span> 列表显示</div><div class="radio-custom"></div></div><div class="style-option" data-style="icons"><div class="style-name"><span>🔖</span> 小图标显示</div><div class="radio-custom"></div></div></div></div>
+
+<script>
+(function(){
+    "use strict";
+    // ==================== 用户系统 ====================
+    let currentUser = null;
+    const USERS_KEY = "bookmark_users";
+    const REMEMBER_KEY = "remembered_credentials";
+    
+    function saveUsers(users) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+    function loadUsers() { const raw = localStorage.getItem(USERS_KEY); return raw ? JSON.parse(raw) : []; }
+    
+    function saveRememberedCredentials(username, password) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username, password }));
+    }
+    function clearRememberedCredentials() {
+        localStorage.removeItem(REMEMBER_KEY);
+    }
+    function getRememberedCredentials() {
+        const raw = localStorage.getItem(REMEMBER_KEY);
+        return raw ? JSON.parse(raw) : null;
+    }
+    
+    function register(username, password) {
+        const users = loadUsers();
+        if (users.find(u => u.username === username)) { alert("用户名已存在"); return false; }
+        users.push({ username, passwordHash: password });
+        saveUsers(users);
+        alert("注册成功，请登录");
+        return true;
+    }
+    
+    function login(username, password, remember = false) {
+        const users = loadUsers();
+        const user = users.find(u => u.username === username && u.passwordHash === password);
+        if (!user) { alert("用户名或密码错误"); return false; }
+        currentUser = user;
+        localStorage.setItem("currentUser", JSON.stringify({ username: user.username }));
+        if (remember) {
+            saveRememberedCredentials(username, password);
+        } else {
+            clearRememberedCredentials();
+        }
+        updateUserUI();
+        reloadAllData();
+        return true;
+    }
+    
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem("currentUser");
+        updateUserUI();
+        reloadAllData();
+    }
+    
+    function restoreCurrentUser() {
+        const saved = localStorage.getItem("currentUser");
+        if (saved) {
+            try {
+                const { username } = JSON.parse(saved);
+                const users = loadUsers();
+                const user = users.find(u => u.username === username);
+                if (user) {
+                    currentUser = user;
+                } else {
+                    localStorage.removeItem("currentUser");
+                }
+            } catch(e) {}
+        }
+        updateUserUI();
+    }
+    
+    function updateUserUI() {
+        const widget = document.getElementById("userWidget");
+        if (!widget) return;
+        if (currentUser) {
+            widget.style.display = "flex";
+            widget.innerHTML = `<span class="user-name">👤 ${escapeHtml(currentUser.username)}</span><button id="logoutBtn" class="user-btn">退出</button>`;
+            document.getElementById("logoutBtn")?.addEventListener("click", logout);
+        } else {
+            widget.style.display = "flex";
+            widget.innerHTML = `<span class="user-name">👤 游客模式</span><button id="loginBtn" class="user-btn">登录</button><button id="registerBtn" class="user-btn">注册</button>`;
+            document.getElementById("loginBtn")?.addEventListener("click", () => showLoginModal());
+            document.getElementById("registerBtn")?.addEventListener("click", () => showRegisterModal());
+        }
+    }
+    
+    function showLoginModal() { showUserModal("登录", true); }
+    function showRegisterModal() { showUserModal("注册", false); }
+    
+    function showUserModal(title, isLogin) {
+        const remembered = getRememberedCredentials();
+        const usernameValue = remembered ? remembered.username : '';
+        const passwordValue = remembered ? remembered.password : '';
+        const rememberChecked = remembered !== null;
+        
+        let bodyHtml = `<div class="form-group"><label>用户名</label><input type="text" id="username" placeholder="请输入用户名" autocomplete="off" value="${escapeHtml(usernameValue)}"></div>
+                        <div class="form-group"><label>密码</label><input type="password" id="password" placeholder="请输入密码" autocomplete="off" value="${escapeHtml(passwordValue)}"></div>`;
+        if (isLogin) {
+            bodyHtml += `<div class="checkbox-group"><input type="checkbox" id="rememberCheckbox" ${rememberChecked ? 'checked' : ''}><label for="rememberCheckbox">记住用户名和密码</label></div>`;
+        }
+        const footerButtons = [
+            { label: title, action: 'submit', class: 'unified-modal-btn-primary', callback: () => {
+                const username = document.getElementById('username')?.value.trim();
+                const password = document.getElementById('password')?.value.trim();
+                if (!username || !password) { alert("请填写完整信息"); return; }
+                if (isLogin) {
+                    const remember = document.getElementById('rememberCheckbox')?.checked || false;
+                    login(username, password, remember);
+                } else {
+                    register(username, password);
+                }
+                closeCurrentModal();
+            } },
+            { label: '取消', action: 'cancel', class: 'unified-modal-btn-secondary', callback: () => closeCurrentModal() }
+        ];
+        showUnifiedModal(title, bodyHtml, footerButtons, null);
+    }
+    
+    let currentModalOverlay = null;
+    function showUnifiedModal(title, bodyHtml, footerButtons, onClose, prefillValue = null, preselectFolderId = null) {
+        if (currentModalOverlay) { document.body.removeChild(currentModalOverlay); currentModalOverlay = null; }
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        const modal = document.createElement('div');
+        modal.className = 'unified-modal';
+        let buttonsHtml = '';
+        footerButtons.forEach(btn => { buttonsHtml += `<button class="unified-modal-btn ${btn.class}" data-action="${btn.action}">${btn.label}</button>`; });
+        modal.innerHTML = `<div class="unified-modal-header"><h3>${escapeHtml(title)}</h3><button class="unified-modal-close">✕</button></div><div class="unified-modal-body">${bodyHtml}</div><div class="unified-modal-footer">${buttonsHtml}</div>`;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        currentModalOverlay = overlay;
+        if (prefillValue) setTimeout(() => { const selectEl = modal.querySelector('#targetFolderSelect'); if (selectEl && prefillValue) selectEl.value = prefillValue; }, 10);
+        if (preselectFolderId) setTimeout(() => { const folderSelect = modal.querySelector('#folderSelect'); if (folderSelect && preselectFolderId) folderSelect.value = preselectFolderId; }, 10);
+        setTimeout(() => overlay.classList.add('active'), 10);
+        const closeModal = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => { if (currentModalOverlay === overlay) { document.body.removeChild(overlay); currentModalOverlay = null; } if (onClose) onClose(); }, 200);
+        };
+        modal.querySelector('.unified-modal-close').onclick = closeModal;
+        modal.querySelectorAll('.unified-modal-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                const action = btn.getAttribute('data-action');
+                let value = null;
+                const selectEl = modal.querySelector('#targetFolderSelect');
+                if (selectEl) value = selectEl.value;
+                closeModal();
+                const foundBtn = footerButtons.find(b => b.action === action);
+                if (foundBtn && foundBtn.callback) {
+                    if (action === 'move' && value) { lastMoveTargetFolderId = value; saveToDB(); }
+                    foundBtn.callback(value);
+                }
+            };
+        });
+        return overlay;
+    }
+    function closeCurrentModal() {
+        if (currentModalOverlay) {
+            currentModalOverlay.classList.remove('active');
+            setTimeout(() => { if (currentModalOverlay) { document.body.removeChild(currentModalOverlay); currentModalOverlay = null; } }, 200);
+        }
+    }
+    
+    // ==================== 核心书签逻辑 ====================
+    let folders = [], currentFolderId = "", currentViewStyle = "waterfall", dragSrcIndex = null;
+    let defaultFolderId = "", allFolderId = "", favoritesFolderId = "", lastUsedFolderId = "";
+    let lastMoveTargetFolderId = "";
+    let currentFloatingWindow = null, lastWindowPosition = { left: 100, top: 80, width: 800, height: 600 };
+    let db = null;
+    const DB_NAME = "BookmarkDB", DB_VERSION = 80, STORE_NAME = "bookmarkData";
+    let hideNewTags = false;
+    let resizeTimer = null;
+    
+    function getStorageKey() { return currentUser ? `bookmarkData_${currentUser.username}` : "bookmarkData_guest"; }
+    
+    async function saveToDB() { if (!db) await initDB(); const key = getStorageKey(); return new Promise((resolve) => { db.transaction([STORE_NAME], "readwrite").objectStore(STORE_NAME).put({ id: key, folders, currentFolderId, currentViewStyle, defaultFolderId, allFolderId, favoritesFolderId, lastUsedFolderId, lastMoveTargetFolderId, lastWindowPosition, hideNewTags, version: DB_VERSION }).onsuccess = () => resolve(); }); }
+    async function loadFromDB() { if (!db) await initDB(); const key = getStorageKey(); return new Promise((resolve) => { db.transaction([STORE_NAME], "readonly").objectStore(STORE_NAME).get(key).onsuccess = (e) => { const d = e.target.result; if (d && d.folders) { folders = d.folders; currentFolderId = d.currentFolderId; currentViewStyle = d.currentViewStyle || "waterfall"; defaultFolderId = d.defaultFolderId; allFolderId = d.allFolderId; favoritesFolderId = d.favoritesFolderId; lastUsedFolderId = d.lastUsedFolderId || ""; lastMoveTargetFolderId = d.lastMoveTargetFolderId || ""; if (d.lastWindowPosition) lastWindowPosition = d.lastWindowPosition; if (d.hideNewTags !== undefined) hideNewTags = d.hideNewTags; } else { loadExampleData(); } resolve(d); }; }); }
+    
+    // 工具函数
+    function detectPathType(input) { if (!input) return "url"; if (/^(https?:\/\/[^\s]+)/i.test(input)) return "url"; if (/^[A-Za-z]:\\[^\s]*/.test(input)) return "path"; if (/^\/[^\s]*/.test(input)) return "path"; return "url"; }
+    function escapeHtml(s) { if (!s) return ""; return s.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+    function shortenUrl(u, l) { return u.length > l ? u.substring(0, l-2)+".." : u; }
+    function generateId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 8); }
+    function getAllBookmarks() { let all = []; folders.forEach(f => { if (f.name !== "所有收藏" && f.name !== "我的喜欢") all.push(...f.bookmarks); }); return all; }
+    function getFavoriteBookmarks() { let fav = []; folders.forEach(f => { if (f.name !== "我的喜欢" && f.name !== "所有收藏") fav.push(...f.bookmarks.filter(b => b.favorite)); }); return fav; }
+    function sortFolders() { const all = folders.find(f => f.name === "所有收藏"), fav = folders.find(f => f.name === "我的喜欢"), def = folders.find(f => f.name === "默认收藏"), others = folders.filter(f => !["所有收藏","我的喜欢","默认收藏"].includes(f.name)); folders = [all, fav, def, ...others].filter(Boolean); }
+    function isSystemFolder(name) { return name === "所有收藏" || name === "我的喜欢" || name === "默认收藏"; }
+    function getCurrentFolder() { const cur = folders.find(f => f.id === currentFolderId); if (cur?.name === "所有收藏") return { id: cur.id, name: "所有收藏", bookmarks: getAllBookmarks() }; if (cur?.name === "我的喜欢") return { id: cur.id, name: "我的喜欢", bookmarks: getFavoriteBookmarks() }; return cur; }
+    function getThumbUrl(bm) { return (bm.customThumb && bm.thumbValue) ? bm.thumbValue : `https://picsum.photos/id/${Math.abs((bm.title?.length || 1) * 7) % 70 + 10}/400/${400 + Math.abs((bm.title?.length || 1) * 13) % 200}`; }
+    function formatTime(timestamp) { if (!timestamp) return '未知时间'; const date = new Date(timestamp); const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
+    function isTodayAdded(timestamp) { if (!timestamp) return false; const now = Date.now(); const oneDay = 24 * 60 * 60 * 1000; return (now - timestamp) < oneDay; }
+    function findAllDuplicates(url, type, excludeId = null) { const duplicates = []; for (let folder of folders) { if (folder.name === "所有收藏" || folder.name === "我的喜欢") continue; for (let bookmark of folder.bookmarks) { if (bookmark.url === url && bookmark.type === type && bookmark.id !== excludeId) { duplicates.push({ folder, bookmark }); } } } return duplicates; }
+    function initDB() { return new Promise((resolve, reject) => { const request = indexedDB.open(DB_NAME, DB_VERSION); request.onerror = () => reject(request.error); request.onsuccess = () => { db = request.result; resolve(db); }; request.onupgradeneeded = (e) => { if (!e.target.result.objectStoreNames.contains(STORE_NAME)) e.target.result.createObjectStore(STORE_NAME, { keyPath: "id" }); }; }); }
+    function ensureSystemFolders() { let all = folders.find(f => f.name === "所有收藏"); if (!all) { all = { id: generateId(), name: "所有收藏", bookmarks: [] }; folders.unshift(all); } allFolderId = all.id; let fav = folders.find(f => f.name === "我的喜欢"); if (!fav) { fav = { id: generateId(), name: "我的喜欢", bookmarks: [] }; folders.splice(1, 0, fav); } favoritesFolderId = fav.id; let def = folders.find(f => f.name === "默认收藏"); if (!def) { def = { id: generateId(), name: "默认收藏", bookmarks: [] }; folders.splice(2, 0, def); } defaultFolderId = def.id; sortFolders(); }
+    function showCopyToast(message) { const toast = document.createElement('div'); toast.className = 'copy-toast'; toast.textContent = message; document.body.appendChild(toast); setTimeout(() => toast.remove(), 2000); }
+    function updateThumbPreview(url, containerId) { const container = document.getElementById(containerId); if (!container) return; if (!url) { container.innerHTML = '<div class="placeholder">🖼️ 等待输入图片网址或上传图片...</div>'; return; } container.innerHTML = '<div class="placeholder">🔄 加载中...</div>'; const img = new Image(); img.onload = () => { container.innerHTML = `<img src="${escapeHtml(url)}" alt="缩略图预览">`; }; img.onerror = () => { container.innerHTML = '<div class="placeholder">❌ 图片加载失败，请检查网址或文件格式</div>'; }; img.src = url; }
+    async function getClipboardContent() { try { const text = await navigator.clipboard.readText(); if (!text || !text.trim()) return null; const trimmed = text.trim(); const urlMatch = trimmed.match(/^(https?:\/\/[^\s]+)/i); if (urlMatch) return { type: 'url', value: urlMatch[1] }; const winPathMatch = trimmed.match(/^[A-Za-z]:\\[^\s]*/); if (winPathMatch) return { type: 'path', value: winPathMatch[0] }; const unixPathMatch = trimmed.match(/^\/[^\s]*/); if (unixPathMatch) return { type: 'path', value: unixPathMatch[0] }; return null; } catch(e) { return null; } }
+    function generateTitleFromContent(content) { if (content.type === 'url') { try { return new URL(content.value).hostname.replace(/^www\./, ''); } catch(e) { return content.value.substring(0, 50); } } else if (content.type === 'path') { const parts = content.value.split(/[\\\/]/); return parts[parts.length - 1] || '本地文件夹'; } return '我的收藏'; }
+    function createUnifiedFloatingWindow(url, title, type) { if (currentFloatingWindow) currentFloatingWindow.remove(); const win = document.createElement('div'); win.className = 'unified-floating'; win.style.cssText = `left:${lastWindowPosition.left}px;top:${lastWindowPosition.top}px;width:${lastWindowPosition.width}px;height:${lastWindowPosition.height}px;`; const typeIcon = type === 'url' ? '🌐' : '📁'; const contentHtml = type === 'url' ? `<iframe src="${escapeHtml(url)}" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-top-navigation allow-downloads"></iframe>` : `<div class="local-viewer"><div class="folder-icon">📁</div><div style="font-size: 0.9rem; color: #5a6e8c;">本地路径</div><div class="path-text">${escapeHtml(url)}</div><div class="button-group"><button class="action-btn open-file-btn">📂 打开文件/文件夹</button><button class="action-btn copy-btn">📋 复制路径</button></div></div>`; win.innerHTML = `<div class="floating-header"><div class="floating-title"><span class="floating-title-icon">${typeIcon}</span><span>${escapeHtml(title)}</span></div><div class="floating-controls"><button class="new-window-btn">🔗 在新窗口打开</button><button class="close-btn">✕ 关闭</button></div></div><div class="floating-content">${contentHtml}</div><div class="resize-handle"></div>`; document.body.appendChild(win); currentFloatingWindow = win; let isDragging = false, dragStartX, dragStartY, startLeft, startTop; const header = win.querySelector('.floating-header'); header.addEventListener('mousedown', (e) => { if (e.target.closest('.floating-controls')) return; isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; startLeft = win.offsetLeft; startTop = win.offsetTop; win.style.transition = 'none'; e.preventDefault(); }); document.addEventListener('mousemove', (e) => { if (!isDragging) return; let newLeft = Math.max(0, Math.min(startLeft + (e.clientX - dragStartX), window.innerWidth - win.offsetWidth)); let newTop = Math.max(0, Math.min(startTop + (e.clientY - dragStartY), window.innerHeight - 50)); win.style.left = newLeft + 'px'; win.style.top = newTop + 'px'; }); document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; win.style.transition = ''; lastWindowPosition = { left: win.offsetLeft, top: win.offsetTop, width: win.offsetWidth, height: win.offsetHeight }; saveToDB(); } }); let isResizing = false, resizeStartX, resizeStartY, startWidth, startHeight; const resizeHandle = win.querySelector('.resize-handle'); resizeHandle.addEventListener('mousedown', (e) => { isResizing = true; resizeStartX = e.clientX; resizeStartY = e.clientY; startWidth = win.offsetWidth; startHeight = win.offsetHeight; e.stopPropagation(); e.preventDefault(); }); document.addEventListener('mousemove', (e) => { if (!isResizing) return; win.style.width = Math.max(400, startWidth + (e.clientX - resizeStartX)) + 'px'; win.style.height = Math.max(300, startHeight + (e.clientY - resizeStartY)) + 'px'; }); document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; lastWindowPosition = { left: win.offsetLeft, top: win.offsetTop, width: win.offsetWidth, height: win.offsetHeight }; saveToDB(); } }); win.querySelector('.new-window-btn').onclick = (e) => { e.stopPropagation(); window.open(url, '_blank'); }; win.querySelector('.close-btn').onclick = (e) => { e.stopPropagation(); if (currentFloatingWindow) { lastWindowPosition = { left: currentFloatingWindow.offsetLeft, top: currentFloatingWindow.offsetTop, width: currentFloatingWindow.offsetWidth, height: currentFloatingWindow.offsetHeight }; currentFloatingWindow.remove(); currentFloatingWindow = null; saveToDB(); } }; if (type === 'path') { win.querySelector('.open-file-btn').onclick = (e) => { e.stopPropagation(); try { window.open(url.match(/^[A-Za-z]:\\/) ? 'file:///' + url.replace(/\\/g, '/') : 'file:///' + url.replace(/\\/g, '/'), '_blank'); } catch(e) { alert('无法打开文件/文件夹'); } }; win.querySelector('.copy-btn').onclick = (e) => { e.stopPropagation(); navigator.clipboard.writeText(url).then(() => showCopyToast('✅ 路径已复制: ' + (url.length > 50 ? url.substring(0,47)+'...' : url))).catch(() => alert('复制失败')); }; } return win; }
+    function showDeleteDialog(title, message, folderOptions, onMove, onDelete, onCancel) { const bodyHtml = `<div class="dialog-message">${escapeHtml(message)}</div>${folderOptions ? `<select id="targetFolderSelect" class="folder-select-dialog">${folderOptions}</select>` : ''}`; const buttons = [ { label: '移动到选择的收藏', action: 'move', class: 'unified-modal-btn-primary', callback: onMove }, { label: '确定删除', action: 'delete', class: 'unified-modal-btn-danger', callback: onDelete }, { label: '取消', action: 'cancel', class: 'unified-modal-btn-secondary', callback: onCancel } ]; let prefill = defaultFolderId; if (lastMoveTargetFolderId && folderOptions && folderOptions.includes(`value="${lastMoveTargetFolderId}"`)) { prefill = lastMoveTargetFolderId; } showUnifiedModal(title, bodyHtml, buttons, null, prefill); }
+    function showDuplicateWarningDialog(duplicates, onContinue, onOverwrite, onCancel) { let message = `发现 ${duplicates.length} 处重复收藏：\n\n`; duplicates.forEach((dup, idx) => { message += `${idx + 1}. ${dup.bookmark.title} (位于「${dup.folder.name}」)\n`; }); message += `\n请选择操作：`; const bodyHtml = `<div class="dialog-message" style="white-space: pre-wrap;">${escapeHtml(message)}</div>`; const buttons = [ { label: '继续保存（新增）', action: 'continue', class: 'unified-modal-btn-primary', callback: onContinue }, { label: '覆盖现有收藏', action: 'overwrite', class: 'unified-modal-btn-danger', callback: onOverwrite }, { label: '取消', action: 'cancel', class: 'unified-modal-btn-secondary', callback: onCancel } ]; showUnifiedModal('检测到重复收藏', bodyHtml, buttons); }
+    function showAddEditModal(bookmark = null, sourceFolder = null) { 
+        const isEdit = !!bookmark; const title = isEdit ? '✏️ 编辑收藏' : '➕ 添加收藏'; const folderOptions = '<option value="default">📁 默认收藏 (推荐)</option>' + folders.filter(f => !["所有收藏","我的喜欢","默认收藏"].includes(f.name)).map(f => `<option value="${f.id}">📁 ${escapeHtml(f.name)} (${f.bookmarks.length})</option>`).join(''); let defaultTitle = isEdit ? (bookmark?.title || '') : '我的收藏'; let defaultUrl = isEdit ? (bookmark?.url || '') : ''; let defaultThumb = isEdit ? (bookmark?.thumbValue || '') : ''; let defaultDownload = isEdit ? (bookmark?.downloadUrl || '') : ''; let clipboardHintHtml = ''; if (!isEdit) clipboardHintHtml = `<div id="clipboardHint" class="clipboard-hint" style="display: none;">📋 检测到剪贴板内容，已自动填充</div>`; let defaultFolderSelect = 'default'; if (lastUsedFolderId && folders.find(f => f.id === lastUsedFolderId)) { defaultFolderSelect = lastUsedFolderId; } let pendingSaveData = null; const performSave = (overwrite = false) => { if (!pendingSaveData) return; const { titleVal, urlVal, noteVal, thumbVal, downloadVal, sel, targetFolder, type } = pendingSaveData; if (overwrite) { const duplicates = findAllDuplicates(urlVal, type, isEdit ? bookmark.id : null); for (let dup of duplicates) { const idx = dup.folder.bookmarks.findIndex(b => b.id === dup.bookmark.id); if (idx !== -1) dup.folder.bookmarks.splice(idx, 1); } } lastUsedFolderId = sel.value === 'default' ? defaultFolderId : sel.value; const bookmarkData = { id: isEdit ? bookmark.id : generateId(), title: titleVal, url: urlVal, type: type, note: noteVal || '', downloadUrl: downloadVal || '', favorite: isEdit ? (bookmark?.favorite || false) : false, customThumb: !!thumbVal, thumbValue: thumbVal || '', createdAt: isEdit ? (bookmark?.createdAt || Date.now()) : Date.now() }; if (isEdit && sourceFolder) sourceFolder.bookmarks = sourceFolder.bookmarks.filter(b => b.id !== bookmark.id); targetFolder.bookmarks.push(bookmarkData); renderAll(); updateFolderSelect(); saveToDB(); pendingSaveData = null; }; 
+        const thumbHtml = `<div class="form-group"><label>🎨 自定义缩略图</label><div style="display: flex; gap: 12px; align-items: center;"><input type="text" id="thumbImageUrl" placeholder="图片网址 (支持 jpg/png/webp/gif/svg/bmp...)" value="${escapeHtml(defaultThumb)}" style="flex: 1;"><button type="button" id="thumbUploadBtn" class="upload-btn" style="padding: 12px; width: auto; background: #eef3fc; border-radius: 28px; cursor: pointer; font-size: 1.2rem; line-height: 1;" title="本地上传">📁</button><input type="file" id="thumbFileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/bmp,image/x-icon" style="display:none"></div><div id="thumbPreview" class="thumb-preview">${defaultThumb ? `<img src="${escapeHtml(defaultThumb)}" alt="预览">` : '<div class="placeholder">🖼️ 等待输入图片网址或上传图片...</div>'}</div></div>`;
+        const downloadHtml = `<div class="form-group"><label>🔗 下载链接 (可选)</label><input type="text" id="downloadUrl" placeholder="https://... 或 磁力链接等" value="${escapeHtml(defaultDownload)}"></div>`;
+        const bodyHtml = `${clipboardHintHtml}<div class="form-group"><label>网站标题 *</label><input type="text" id="bookmarkTitle" placeholder="标题" value="${escapeHtml(defaultTitle)}"></div><div class="form-group"><label>网址 / 本地路径 * <span id="pathTypeBadge" class="type-badge">自动识别</span></label><div class="path-input-wrapper"><input type="text" id="bookmarkUrl" placeholder="https://... 或 C:\\文件夹" value="${escapeHtml(defaultUrl)}"><button type="button" id="browsePathBtn" class="browse-btn">📂 选择文件夹</button></div></div><div class="form-group"><label>选择收藏夹 *</label><select id="folderSelect">${folderOptions}</select></div>${thumbHtml}${downloadHtml}<div class="form-group"><label>📝 备注</label><textarea id="bookmarkNote" rows="3">${escapeHtml(bookmark?.note || '')}</textarea></div>`; 
+        showUnifiedModal(title, bodyHtml, [ { label: '保存', action: 'save', class: 'unified-modal-btn-primary', callback: () => { 
+            let titleVal = document.getElementById('bookmarkTitle')?.value.trim();
+            let urlVal = document.getElementById('bookmarkUrl')?.value.trim();
+            const noteVal = document.getElementById('bookmarkNote')?.value.trim();
+            const thumbVal = document.getElementById('thumbImageUrl')?.value.trim();
+            const downloadVal = document.getElementById('downloadUrl')?.value.trim();
+            const sel = document.getElementById('folderSelect');
+            let autoFilled = false;
+            if (!titleVal || !urlVal) {
+                if (!titleVal) { titleVal = '未命名收藏_' + Date.now(); autoFilled = true; }
+                if (!urlVal) { urlVal = 'https://example.com/placeholder_' + Date.now(); autoFilled = true; }
+                if (autoFilled) alert(`已自动补全内容：\n标题“${titleVal}”\n网址“${urlVal}”`);
+            }
+            const type = detectPathType(urlVal);
+            let tid = sel.value === 'default' ? defaultFolderId : sel.value;
+            const targetFolder = folders.find(f => f.id === tid);
+            if (!targetFolder) { alert('请选择有效的收藏夹'); return; }
+            const duplicates = findAllDuplicates(urlVal, type, isEdit ? bookmark.id : null);
+            if (duplicates.length > 0) {
+                pendingSaveData = { titleVal, urlVal, noteVal, thumbVal, downloadVal, sel, targetFolder, type };
+                showDuplicateWarningDialog(duplicates, () => { performSave(false); }, () => { performSave(true); }, () => { pendingSaveData = null; });
+            } else {
+                lastUsedFolderId = tid;
+                const bookmarkData = { id: isEdit ? bookmark.id : generateId(), title: titleVal, url: urlVal, type: type, note: noteVal || '', downloadUrl: downloadVal || '', favorite: isEdit ? (bookmark?.favorite || false) : false, customThumb: !!thumbVal, thumbValue: thumbVal || '', createdAt: isEdit ? (bookmark?.createdAt || Date.now()) : Date.now() };
+                if (isEdit && sourceFolder) sourceFolder.bookmarks = sourceFolder.bookmarks.filter(b => b.id !== bookmark.id);
+                targetFolder.bookmarks.push(bookmarkData);
+                renderAll(); updateFolderSelect(); saveToDB();
+            }
+        } }, { label: '取消', action: 'cancel', class: 'unified-modal-btn-secondary', callback: () => {} } ], null, null, defaultFolderSelect); 
+        setTimeout(() => { 
+            const urlInp = document.getElementById('bookmarkUrl'); if (urlInp) { const updateBadge = () => { const val = urlInp.value.trim(); const type = detectPathType(val); const badge = document.getElementById('pathTypeBadge'); if (badge) { badge.textContent = type === 'url' ? '🌐 网页链接' : '📁 本地路径'; badge.style.background = type === 'url' ? '#eef3fc' : '#fef3e8'; badge.style.color = type === 'url' ? '#2c7da0' : '#d97706'; } }; urlInp.addEventListener('input', updateBadge); updateBadge(); } 
+            const thumbInput = document.getElementById('thumbImageUrl'); const thumbPreview = document.getElementById('thumbPreview'); if (thumbInput && thumbPreview) { const updatePreview = () => updateThumbPreview(thumbInput.value, 'thumbPreview'); thumbInput.addEventListener('input', updatePreview); updatePreview(); } 
+            const uploadBtn = document.getElementById('thumbUploadBtn'); const fileInput = document.getElementById('thumbFileInput'); if (uploadBtn && fileInput) { uploadBtn.onclick = () => fileInput.click(); fileInput.onchange = (e) => { const file = e.target.files[0]; if (file && file.type.startsWith('image/')) { const reader = new FileReader(); reader.onload = (ev) => { const dataUrl = ev.target.result; if (thumbInput) thumbInput.value = dataUrl; updateThumbPreview(dataUrl, 'thumbPreview'); }; reader.readAsDataURL(file); } else if (file) { alert('请选择图片文件（支持 jpg、png、webp、gif、svg、bmp 等格式）'); } }; } 
+            const browseBtn = document.getElementById('browsePathBtn'); if (browseBtn) { browseBtn.onclick = () => { const inp = document.createElement('input'); inp.type = 'file'; inp.webkitdirectory = true; inp.onchange = (e) => { const f = e.target.files[0]; if (f) { let p = f.path || f.webkitRelativePath; if (p) { const ls = Math.max(p.lastIndexOf('\\'), p.lastIndexOf('/')); if (ls > 0) p = p.substring(0, ls); if (urlInp) urlInp.value = p; const titleInp = document.getElementById('bookmarkTitle'); if (titleInp && !titleInp.value.trim()) titleInp.value = p.split(/[\\\/]/).pop(); const updateBadge = () => { const val = urlInp.value.trim(); const type = detectPathType(val); const badge = document.getElementById('pathTypeBadge'); if (badge) { badge.textContent = type === 'url' ? '🌐 网页链接' : '📁 本地路径'; badge.style.background = type === 'url' ? '#eef3fc' : '#fef3e8'; badge.style.color = type === 'url' ? '#2c7da0' : '#d97706'; } }; updateBadge(); } } inp.remove(); }; document.body.appendChild(inp); inp.click(); }; } 
+            if (!isEdit) { getClipboardContent().then(content => { if (content && urlInp && !urlInp.value.trim()) { urlInp.value = content.value; const generatedTitle = generateTitleFromContent(content); const titleInp = document.getElementById('bookmarkTitle'); if (titleInp && !titleInp.value.trim()) titleInp.value = generatedTitle; const hintDiv = document.getElementById('clipboardHint'); if (hintDiv) { hintDiv.innerHTML = `📋 已从剪贴板获取: ${content.value.substring(0, 50)}${content.value.length > 50 ? '...' : ''}`; hintDiv.classList.add('success'); hintDiv.style.display = 'flex'; setTimeout(() => { if (hintDiv) hintDiv.style.display = 'none'; }, 4000); } const updateBadge = () => { const val = urlInp.value.trim(); const type = detectPathType(val); const badge = document.getElementById('pathTypeBadge'); if (badge) { badge.textContent = type === 'url' ? '🌐 网页链接' : '📁 本地路径'; badge.style.background = type === 'url' ? '#eef3fc' : '#fef3e8'; badge.style.color = type === 'url' ? '#2c7da0' : '#d97706'; } }; updateBadge(); } }).catch(() => {}); } 
+            if (!isEdit) { const titleInput = document.getElementById('bookmarkTitle'); if (titleInput && !titleInput.value.trim()) { titleInput.focus(); titleInput.select(); } } 
+        }, 50); 
+    }
+    
+    function renderSidebar() { const c = document.getElementById("folderList"); if (!c) return; c.innerHTML = ""; folders.forEach((f, idx) => { const isSys = isSystemFolder(f.name); const div = document.createElement("div"); div.className = `folder-item ${currentFolderId === f.id ? "active" : ""}`; if (!isSys) div.setAttribute("draggable", "true"); div.innerHTML = `<div class="folder-info">${!isSys ? '<span class="drag-handle" title="拖拽排序">⋮⋮</span>' : '<span style="width:24px;"></span>'}<div class="folder-info-content"><span>📁</span><span class="folder-name">${escapeHtml(f.name)}</span><span class="folder-count">${f.name === "所有收藏" ? getAllBookmarks().length : (f.name === "我的喜欢" ? getFavoriteBookmarks().length : f.bookmarks.length)}</span></div></div>${!isSys ? `<div class="folder-actions"><button class="rename-folder-btn" data-id="${f.id}">✏️</button><button class="del-folder" data-id="${f.id}">🗑️</button></div>` : '<div style="width:52px;"></div>'}`; if (!isSys) { div.addEventListener("dragstart", (e) => { dragSrcIndex = idx; e.dataTransfer.effectAllowed = 'move'; }); div.addEventListener("dragover", (e) => e.preventDefault()); div.addEventListener("drop", (e) => { e.preventDefault(); if (dragSrcIndex !== null && dragSrcIndex !== idx) { const dragged = folders[dragSrcIndex], target = folders[idx]; if (!isSystemFolder(dragged.name) && !isSystemFolder(target.name)) { folders.splice(dragSrcIndex, 1); folders.splice(idx, 0, dragged); renderSidebar(); updateFolderSelect(); saveToDB(); } } dragSrcIndex = null; }); } div.querySelector(".folder-info-content").addEventListener("click", (e) => { if (!e.target.closest('.rename-folder-btn') && !e.target.closest('.del-folder')) { currentFolderId = f.id; renderAll(); saveToDB(); } }); if (!isSys) { div.querySelector(".rename-folder-btn").onclick = (e) => { e.stopPropagation(); const inp = document.createElement("input"); inp.type = "text"; inp.value = f.name; inp.className = "folder-name editing"; const targetSpan = div.querySelector(".folder-name"); targetSpan.style.display = "none"; targetSpan.parentNode.insertBefore(inp, targetSpan); inp.focus(); inp.select(); inp.onblur = () => { const n = inp.value.trim(); if (n && n !== f.name && !isSystemFolder(n)) { f.name = n; renderSidebar(); updateFolderSelect(); saveToDB(); } inp.remove(); targetSpan.style.display = ""; }; inp.onkeypress = (e) => { if (e.key === "Enter") inp.blur(); }; }; div.querySelector(".del-folder").onclick = (e) => { e.stopPropagation(); deleteFolderWithDialog(f.id, f.name, f.bookmarks); }; } c.appendChild(div); }); const cur = getCurrentFolder(); document.getElementById("currentFolderNameDisplay").innerText = cur ? cur.name : "所有收藏"; }
+    function deleteFolderWithDialog(folderId, folderName, bookmarks) { const otherFolders = folders.filter(f => !isSystemFolder(f.name) && f.id !== folderId); const defaultFolder = folders.find(f => f.id === defaultFolderId); let optionsHtml = '<option value="">请选择目标文件夹</option>'; [...otherFolders, defaultFolder].forEach(f => { if (f && f.id !== folderId) optionsHtml += `<option value="${f.id}">📁 ${escapeHtml(f.name)} (${f.bookmarks.length})</option>`; }); const message = bookmarks.length === 0 ? `确定要删除文件夹 "${folderName}" 吗？` : `文件夹 "${folderName}" 中有 ${bookmarks.length} 个收藏项。`; showDeleteDialog('删除文件夹', message, optionsHtml, (targetId) => { if (targetId) { const target = folders.find(f => f.id === targetId); const src = folders.find(f => f.id === folderId); if (target && src) { target.bookmarks.push(...src.bookmarks); folders = folders.filter(f => f.id !== folderId); if (currentFolderId === folderId) currentFolderId = allFolderId; renderAll(); updateFolderSelect(); saveToDB(); } } else { folders = folders.filter(f => f.id !== folderId); if (currentFolderId === folderId) currentFolderId = allFolderId; renderAll(); updateFolderSelect(); saveToDB(); } }, () => { folders = folders.filter(f => f.id !== folderId); if (currentFolderId === folderId) currentFolderId = allFolderId; renderAll(); updateFolderSelect(); saveToDB(); }, () => {}); }
+    function updateHideNewTagsUI() { const container = document.getElementById("viewScrollContainer"); const btn = document.getElementById("toggleNewBadgeBtn"); if (hideNewTags) { container.classList.add("hide-new-tags"); btn.innerHTML = "✨ 显示最新标签"; btn.classList.add("active"); } else { container.classList.remove("hide-new-tags"); btn.innerHTML = "✨ 隐藏最新标签"; btn.classList.remove("active"); } }
+    function toggleNewTags() { hideNewTags = !hideNewTags; updateHideNewTagsUI(); saveToDB(); }
+    function getDownloadButtonHtml(downloadUrl) { if (downloadUrl && downloadUrl.trim()) { return `<button class="download-btn" data-download-url="${escapeHtml(downloadUrl)}" title="下载链接">下载链接</button>`; } return ''; }
+    function renderWaterfall(items, container) {
+        if (!items.length) { container.innerHTML = `<div class="empty-message">✨ 暂无收藏，点击「添加收藏」开始收集吧</div>`; return; }
+        const containerWidth = container.clientWidth; const cardWidth = 280; const gap = 24;
+        let columnCount = Math.max(1, Math.floor((containerWidth + gap) / (cardWidth + gap)));
+        if (containerWidth <= 550) columnCount = 1; else if (containerWidth <= 700) columnCount = Math.min(2, columnCount); else if (containerWidth <= 900) columnCount = Math.min(3, columnCount); else if (containerWidth <= 1100) columnCount = Math.min(3, columnCount); else if (containerWidth <= 1400) columnCount = Math.min(4, columnCount); else columnCount = Math.min(5, columnCount);
+        const tempContainer = document.createElement('div'); tempContainer.style.position = 'absolute'; tempContainer.style.visibility = 'hidden'; tempContainer.style.width = cardWidth + 'px'; tempContainer.style.top = '-9999px'; document.body.appendChild(tempContainer);
+        const heights = [];
+        items.forEach(({ b, src }) => { const thumb = getThumbUrl(b); const typeIcon = b.type === 'path' ? '📂' : '🌐'; const noteHtml = b.note ? `<div class="note-preview">📝 ${escapeHtml(b.note.length > 50 ? b.note.substring(0, 50) + '...' : b.note)}</div>` : ''; const locationHtml = src ? `<div style="font-size:0.65rem; color:#8aa0bc; margin-top:4px;">📁 ${escapeHtml(src)}</div>` : ''; const timeHtml = `<span class="time-badge-inline">📅 ${formatTime(b.createdAt)}</span>`; const favClass = b.favorite ? 'active' : ''; const downloadBtnHtml = getDownloadButtonHtml(b.downloadUrl); const thumbHtml = `<div class="thumbnail-container"><img class="thumbnail-img" src="${escapeHtml(thumb)}" loading="lazy" style="width:100%; height:auto;"></div>`; const cardDiv = document.createElement('div'); cardDiv.className = 'bookmark-card'; cardDiv.innerHTML = thumbHtml + `<div class="card-info-area"><div class="card-title"><span class="path-icon">${typeIcon}</span><span>${escapeHtml(b.title)}</span>${downloadBtnHtml}</div><div class="card-url">${escapeHtml(shortenUrl(b.url, 45))}</div>${noteHtml}${locationHtml}<div class="card-actions">${timeHtml}<button class="favorite-icon ${favClass}" data-id="${b.id}"><span class="heart-unfilled">♡</span><span class="heart-filled">❤️</span></button><button class="action-icon edit-action" data-id="${b.id}" data-source="${src || ''}">✏️</button><button class="action-icon delete-action" data-id="${b.id}" data-source="${src || ''}">🗑️</button></div></div>`; tempContainer.appendChild(cardDiv); heights.push(cardDiv.getBoundingClientRect().height); tempContainer.removeChild(cardDiv); });
+        document.body.removeChild(tempContainer);
+        const columns = Array(columnCount).fill().map(() => ({ height: 0, cards: [] }));
+        for (let i = 0; i < items.length; i++) { let minIndex = 0; for (let j = 1; j < columnCount; j++) { if (columns[j].height < columns[minIndex].height) minIndex = j; } columns[minIndex].cards.push({ item: items[i], height: heights[i] }); columns[minIndex].height += heights[i] + gap; }
+        const masonryDiv = document.createElement('div'); masonryDiv.className = 'waterfall-masonry'; masonryDiv.style.display = 'flex'; masonryDiv.style.gap = gap + 'px'; masonryDiv.style.alignItems = 'flex-start';
+        for (let i = 0; i < columnCount; i++) { const colDiv = document.createElement('div'); colDiv.className = 'waterfall-column'; colDiv.style.flex = '1'; colDiv.style.display = 'flex'; colDiv.style.flexDirection = 'column'; colDiv.style.gap = gap + 'px';
+            columns[i].cards.forEach(({ item }) => { const { b, src } = item; const thumb = getThumbUrl(b); const typeIcon = b.type === 'path' ? '📂' : '🌐'; const noteHtml = b.note ? `<div class="note-preview">📝 ${escapeHtml(b.note.length > 50 ? b.note.substring(0, 50) + '...' : b.note)}</div>` : ''; const locationHtml = src ? `<div style="font-size:0.65rem; color:#8aa0bc; margin-top:4px;">📁 ${escapeHtml(src)}</div>` : ''; const timeHtml = `<span class="time-badge-inline">📅 ${formatTime(b.createdAt)}</span>`; const favClass = b.favorite ? 'active' : ''; const downloadBtnHtml = getDownloadButtonHtml(b.downloadUrl); const thumbHtml = `<div class="thumbnail-container"><img class="thumbnail-img" src="${escapeHtml(thumb)}" loading="lazy" style="width:100%; height:auto;"></div>`; const card = document.createElement('div'); card.className = 'bookmark-card'; if (isTodayAdded(b.createdAt)) card.classList.add('new-today'); card.innerHTML = thumbHtml + `<div class="card-info-area"><div class="card-title"><span class="path-icon">${typeIcon}</span><span>${escapeHtml(b.title)}</span>${downloadBtnHtml}</div><div class="card-url">${escapeHtml(shortenUrl(b.url, 45))}</div>${noteHtml}${locationHtml}<div class="card-actions">${timeHtml}<button class="favorite-icon ${favClass}" data-id="${b.id}"><span class="heart-unfilled">♡</span><span class="heart-filled">❤️</span></button><button class="action-icon edit-action" data-id="${b.id}" data-source="${src || ''}">✏️</button><button class="action-icon delete-action" data-id="${b.id}" data-source="${src || ''}">🗑️</button></div></div>`;
+                const favBtn = card.querySelector('.favorite-icon'); favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(b.id, favBtn); };
+                const downloadBtn = card.querySelector('.download-btn'); if (downloadBtn) { downloadBtn.onclick = (e) => { e.stopPropagation(); const url = downloadBtn.getAttribute('data-download-url'); if (url) window.open(url, '_blank'); }; }
+                card.onclick = (e) => { if (!e.target.closest('.action-icon') && !e.target.closest('.favorite-icon') && !e.target.closest('.download-btn')) createUnifiedFloatingWindow(b.url, b.title, b.type); };
+                colDiv.appendChild(card);
+            });
+            masonryDiv.appendChild(colDiv);
+        }
+        container.innerHTML = ''; container.appendChild(masonryDiv);
+    }
+    function toggleFavorite(id, btnElement) { let targetBookmark = null; for (let f of folders) { if (f.name === "我的喜欢") continue; const b = f.bookmarks.find(b => b.id === id); if (b) { targetBookmark = b; break; } } if (!targetBookmark) return; const newState = !targetBookmark.favorite; targetBookmark.favorite = newState; saveToDB(); const curFolder = folders.find(f => f.id === currentFolderId); const isFavoritesView = curFolder?.name === "我的喜欢"; if (isFavoritesView && !newState) { renderAll(); return; } if (btnElement && !isFavoritesView) { if (newState) btnElement.classList.add('active'); else btnElement.classList.remove('active'); renderSidebar(); return; } renderAll(); }
+    function renderBookmarks() { const cont = document.getElementById("viewContainer"); const cur = folders.find(f => f.id === currentFolderId); const isAll = cur?.name === "所有收藏", isFav = cur?.name === "我的喜欢"; cont.className = `view-${currentViewStyle}`; cont.innerHTML = ""; let items = []; if (isAll) { const srcMap = new Map(); folders.forEach(f => { if (!["所有收藏","我的喜欢"].includes(f.name)) f.bookmarks.forEach(b => srcMap.set(b.id, f.name)); }); items = getAllBookmarks().map(b => ({ b, src: srcMap.get(b.id) })); items.sort((a, b) => (b.b.createdAt || 0) - (a.b.createdAt || 0)); } else if (isFav) { items = getFavoriteBookmarks().map(b => ({ b, src: null })); items.sort((a, b) => (b.b.createdAt || 0) - (a.b.createdAt || 0)); } else if (cur) { items = cur.bookmarks.map(b => ({ b, src: null })); items.sort((a, b) => (b.b.createdAt || 0) - (a.b.createdAt || 0)); } if (items.length === 0) { cont.innerHTML = `<div class="empty-message">✨ 暂无收藏，点击「添加收藏」开始收集吧</div>`; return; } if (currentViewStyle === 'waterfall') { renderWaterfall(items, cont); } else if (currentViewStyle === 'icons') { items.forEach(({ b, src }) => { const thumb = getThumbUrl(b); const card = document.createElement("div"); card.className = "bookmark-card"; card.setAttribute('data-title', `${b.title}\n${b.type === 'path' ? '📁 本地路径' : '🌐 网页链接'}\n添加时间: ${formatTime(b.createdAt)}`); card.innerHTML = `<div class="thumbnail-container"><img class="thumbnail-img" src="${escapeHtml(thumb)}" loading="lazy"></div>`; card.onclick = (e) => { e.stopPropagation(); createUnifiedFloatingWindow(b.url, b.title, b.type); }; cont.appendChild(card); }); } else if (currentViewStyle === 'list') { items.forEach(({ b, src }) => { const thumb = getThumbUrl(b); const typeIcon = b.type === 'path' ? '📂' : '🌐'; const locationText = src ? src : (cur?.name === "所有收藏" ? "所有收藏" : (cur?.name || "默认收藏")); const noteBadge = b.note ? `<span class="note-badge" title="${escapeHtml(b.note)}">📝 ${escapeHtml(b.note.length > 20 ? b.note.substring(0, 20) + '...' : b.note)}</span>` : ''; const favClass = b.favorite ? 'active' : ''; const downloadBtnHtml = getDownloadButtonHtml(b.downloadUrl); const card = document.createElement("div"); card.className = "bookmark-card"; card.innerHTML = `<div class="thumbnail-container"><img class="thumbnail-img" src="${escapeHtml(thumb)}" loading="lazy"></div><div class="card-info-area"><div class="card-title"><span class="type-icon">${typeIcon}</span><span class="location-badge">${escapeHtml(locationText)}</span><span class="title-text">${escapeHtml(b.title)}</span>${downloadBtnHtml}${noteBadge}</div><div class="card-url">${escapeHtml(shortenUrl(b.url, 60))}</div></div><div class="card-actions"><button class="favorite-icon ${favClass}" data-id="${b.id}"><span class="heart-unfilled">♡</span><span class="heart-filled">❤️</span></button><button class="action-icon edit-action" data-id="${b.id}" data-source="${src || ''}">✏️</button><button class="action-icon delete-action" data-id="${b.id}" data-source="${src || ''}">🗑️</button></div>`; const favBtn = card.querySelector('.favorite-icon'); favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(b.id, favBtn); }; const downloadBtn = card.querySelector('.download-btn'); if (downloadBtn) { downloadBtn.onclick = (e) => { e.stopPropagation(); const url = downloadBtn.getAttribute('data-download-url'); if (url) window.open(url, '_blank'); }; } card.onclick = (e) => { if (!e.target.closest('.action-icon') && !e.target.closest('.favorite-icon') && !e.target.closest('.download-btn')) createUnifiedFloatingWindow(b.url, b.title, b.type); }; cont.appendChild(card); }); } else { items.forEach(({ b, src }) => { const thumb = getThumbUrl(b); const typeIcon = b.type === 'path' ? '📂' : '🌐'; const noteHtml = b.note ? `<div class="note-preview">📝 ${escapeHtml(b.note.length > 50 ? b.note.substring(0, 50) + '...' : b.note)}</div>` : ''; const locationHtml = src ? `<div style="font-size:0.65rem; color:#8aa0bc; margin-top:4px;">📁 ${escapeHtml(src)}</div>` : ''; const timeHtml = `<span class="time-badge-inline">📅 ${formatTime(b.createdAt)}</span>`; const favClass = b.favorite ? 'active' : ''; const downloadBtnHtml = getDownloadButtonHtml(b.downloadUrl); const card = document.createElement("div"); card.className = "bookmark-card"; if (isTodayAdded(b.createdAt)) card.classList.add("new-today"); card.innerHTML = `<div class="thumbnail-container"><img class="thumbnail-img" src="${escapeHtml(thumb)}" loading="lazy"></div><div class="card-info-area"><div class="card-title"><span class="path-icon">${typeIcon}</span><span>${escapeHtml(b.title)}</span>${downloadBtnHtml}</div><div class="card-url">${escapeHtml(shortenUrl(b.url, 45))}</div>${noteHtml}${locationHtml}<div class="card-actions">${timeHtml}<button class="favorite-icon ${favClass}" data-id="${b.id}"><span class="heart-unfilled">♡</span><span class="heart-filled">❤️</span></button><button class="action-icon edit-action" data-id="${b.id}" data-source="${src || ''}">✏️</button><button class="action-icon delete-action" data-id="${b.id}" data-source="${src || ''}">🗑️</button></div></div>`; const favBtn = card.querySelector('.favorite-icon'); favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(b.id, favBtn); }; const downloadBtn = card.querySelector('.download-btn'); if (downloadBtn) { downloadBtn.onclick = (e) => { e.stopPropagation(); const url = downloadBtn.getAttribute('data-download-url'); if (url) window.open(url, '_blank'); }; } card.onclick = (e) => { if (!e.target.closest('.action-icon') && !e.target.closest('.favorite-icon') && !e.target.closest('.download-btn')) createUnifiedFloatingWindow(b.url, b.title, b.type); }; cont.appendChild(card); }); } updateHideNewTagsUI(); }
+    function updateFolderSelect() { const sel = document.getElementById("folderSelect"); if (!sel) return; sel.innerHTML = '<option value="default">📁 默认收藏 (推荐)</option>'; folders.forEach(f => { if (!["所有收藏","我的喜欢","默认收藏"].includes(f.name)) sel.appendChild(new Option(`📁 ${f.name} (${f.bookmarks.length})`, f.id)); }); }
+    function addFolder() { const name = document.getElementById("folderNameInput").value.trim(); if (!name) return; if (["所有收藏","我的喜欢","默认收藏"].includes(name)) { alert("不能创建系统保留的目录名称"); return; } folders.push({ id: generateId(), name, bookmarks: [] }); sortFolders(); document.getElementById("folderNameInput").value = ""; currentFolderId = folders[folders.length-1].id; renderAll(); updateFolderSelect(); saveToDB(); }
+    
+    // ==================== 导出（带用户标识和文件名） ====================
+    function exportData() {
+        const username = currentUser ? currentUser.username : "游客";
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const filename = `${username}_书签_${year}-${month}-${day}.json`;
+        const exportDataObj = {
+            userIdentity: username === "游客" ? "guest" : username,
+            folders,
+            currentFolderId,
+            currentViewStyle,
+            defaultFolderId,
+            allFolderId,
+            favoritesFolderId,
+            lastUsedFolderId,
+            lastMoveTargetFolderId,
+            lastWindowPosition,
+            hideNewTags
+        };
+        const d = JSON.stringify(exportDataObj);
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([d], {type: "application/json"}));
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+    
+    // ==================== 导入（增加用户校验） ====================
+    function mergeImportedData(imported) {
+        const importedFolders = imported.folders;
+        const currentFolderMap = new Map();
+        folders.forEach(f => { if (!isSystemFolder(f.name)) currentFolderMap.set(f.name, f); });
+        
+        for (let impFolder of importedFolders) {
+            if (impFolder.name === "所有收藏" || impFolder.name === "我的喜欢") continue;
+            impFolder.bookmarks = impFolder.bookmarks || [];
+            for (let b of impFolder.bookmarks) {
+                b.type = b.type || detectPathType(b.url);
+                b.note = b.note || "";
+                b.downloadUrl = b.downloadUrl || "";
+                b.favorite = b.favorite || false;
+                b.customThumb = b.customThumb || !!b.thumbValue;
+                if (!b.createdAt) b.createdAt = Date.now();
+            }
+            
+            if (impFolder.name === "默认收藏") {
+                const defaultFolder = folders.find(f => f.name === "默认收藏");
+                if (defaultFolder) {
+                    const existingUrls = new Set(defaultFolder.bookmarks.map(b => `${b.url}|${b.type}`));
+                    for (let b of impFolder.bookmarks) {
+                        const key = `${b.url}|${b.type}`;
+                        if (!existingUrls.has(key)) {
+                            defaultFolder.bookmarks.push(b);
+                            existingUrls.add(key);
+                        }
+                    }
+                } else {
+                    folders.push({ id: generateId(), name: "默认收藏", bookmarks: impFolder.bookmarks });
+                }
+                continue;
+            }
+            
+            if (currentFolderMap.has(impFolder.name)) {
+                const targetFolder = currentFolderMap.get(impFolder.name);
+                const existingUrls = new Set(targetFolder.bookmarks.map(b => `${b.url}|${b.type}`));
+                for (let b of impFolder.bookmarks) {
+                    const key = `${b.url}|${b.type}`;
+                    if (!existingUrls.has(key)) {
+                        targetFolder.bookmarks.push(b);
+                        existingUrls.add(key);
+                    }
+                }
+            } else {
+                const newFolder = { id: generateId(), name: impFolder.name, bookmarks: impFolder.bookmarks };
+                folders.push(newFolder);
+                currentFolderMap.set(impFolder.name, newFolder);
+            }
+        }
+        sortFolders();
+        renderAll();
+        updateFolderSelect();
+        saveToDB();
+    }
+    
+    function importData(file) {
+        const r = new FileReader();
+        r.onload = async (e) => {
+            try {
+                const d = JSON.parse(e.target.result);
+                if (d.folders && Array.isArray(d.folders)) {
+                    // 用户校验
+                    const currentIdentity = currentUser ? currentUser.username : "guest";
+                    const fileIdentity = d.userIdentity || (currentUser ? "unknown" : "guest"); // 兼容旧文件
+                    if (fileIdentity !== currentIdentity) {
+                        alert(`此导出文件属于用户“${fileIdentity === "guest" ? "游客" : fileIdentity}”，与当前用户“${currentIdentity === "guest" ? "游客" : currentIdentity}”不匹配，无法导入。`);
+                        return;
+                    }
+                    
+                    const bodyHtml = `<div class="dialog-message">请选择导入方式：</div>`;
+                    const buttons = [
+                        { label: '覆盖（替换现有数据）', action: 'overwrite', class: 'unified-modal-btn-primary', callback: () => {
+                            folders = d.folders;
+                            currentFolderId = d.currentFolderId || folders[0]?.id;
+                            currentViewStyle = d.currentViewStyle || "waterfall";
+                            defaultFolderId = d.defaultFolderId;
+                            allFolderId = d.allFolderId;
+                            favoritesFolderId = d.favoritesFolderId;
+                            lastUsedFolderId = d.lastUsedFolderId || defaultFolderId;
+                            lastMoveTargetFolderId = d.lastMoveTargetFolderId || "";
+                            if (d.lastWindowPosition) lastWindowPosition = d.lastWindowPosition;
+                            if (d.hideNewTags !== undefined) hideNewTags = d.hideNewTags;
+                            ensureSystemFolders();
+                            folders.forEach(f => {
+                                f.bookmarks = f.bookmarks || [];
+                                f.bookmarks.forEach(b => {
+                                    b.type = b.type || detectPathType(b.url);
+                                    b.note = b.note || "";
+                                    b.downloadUrl = b.downloadUrl || "";
+                                    b.favorite = b.favorite || false;
+                                    b.customThumb = b.customThumb || !!b.thumbValue;
+                                    if (!b.createdAt) b.createdAt = Date.now();
+                                });
+                            });
+                            if (!folders.find(f => f.id === currentFolderId) && folders.length) currentFolderId = allFolderId || folders[0]?.id;
+                            renderAll();
+                            updateFolderSelect();
+                            saveToDB();
+                            alert("导入成功（覆盖）！");
+                        } },
+                        { label: '增加（合并到现有数据）', action: 'merge', class: 'unified-modal-btn-primary', callback: () => {
+                            mergeImportedData(d);
+                            alert("导入成功（合并）！");
+                        } },
+                        { label: '取消', action: 'cancel', class: 'unified-modal-btn-secondary', callback: () => {} }
+                    ];
+                    showUnifiedModal('选择导入方式', bodyHtml, buttons);
+                } else {
+                    alert("文件格式错误");
+                }
+            } catch(err) {
+                alert("解析失败");
+            }
+        };
+        r.readAsText(file);
+    }
+    
+    function triggerImport() { const inp = document.createElement("input"); inp.type = "file"; inp.accept = "application/json"; inp.onchange = e => { if (inp.files[0]) importData(inp.files[0]); }; inp.click(); }
+    
+    function loadDemoData() { if (confirm("加载示例数据会替换当前所有收藏，确定要继续吗？")) { loadExampleData(); saveToDB(); renderAll(); updateFolderSelect(); alert("已加载示例数据！"); } }
+    function loadExampleData() { folders = [ { id: generateId(), name: "所有收藏", bookmarks: [] }, { id: generateId(), name: "我的喜欢", bookmarks: [] }, { id: generateId(), name: "默认收藏", bookmarks: [] }, { id: generateId(), name: "龚老师课堂", bookmarks: [{ id: generateId(), title: "龚老师的B站", url: "https://space.bilibili.com/98828888?spm_id_from=333.337.0.0", type: "url", note: "总有你学不完的好东西", downloadUrl: "", favorite: true, customThumb: true, thumbValue: "https://gd-hbimg-edge.huaban.com/f2cafabbdacff1609579917eceb5bd8e68f82314cae1b-kkR7EV?auth_key=1774440000-1d23b71b29934eda918f320952bc1828-0-0ed3697149ee300c934d54cb4f277527", createdAt: Date.now() - 86400000 }, { id: generateId(), title: "龚老师的花瓣网", url: "https://huaban.com/user/gonglaoshiketang", type: "url", note: "各种优秀素材参考一网打尽", downloadUrl: "", favorite: false, customThumb: true, thumbValue: "https://gd-hbimg-edge.huaban.com/a8604a73bc313ad6a51c1213afb3730de1a8538babbd89-tA5P56?auth_key=1774440000-1d23b71b29934eda918f320952bc1828-0-10188810ab57104546e5bd92e765153e", createdAt: Date.now() - 172800000 }] }, { id: generateId(), name: "本地路径", bookmarks: [{ id: generateId(), title: "我的项目", url: "D:\\GJL", type: "path", note: "浏览电脑本地文件", downloadUrl: "", favorite: true, customThumb: true, thumbValue: "https://gd-hbimg-edge.huaban.com/0185d2551cd9eed0dbb9056240f091236a2606eb165b17-L3L4xP?auth_key=1774440000-1d23b71b29934eda918f320952bc1828-0-7237dfecb36c08c769cb1f35f3beb9e1", createdAt: Date.now() - 259200000 }] } ]; allFolderId = folders[0].id; favoritesFolderId = folders[1].id; defaultFolderId = folders[2].id; currentFolderId = allFolderId; lastUsedFolderId = defaultFolderId; }
+    function initEmptyData() { folders = [ { id: generateId(), name: "所有收藏", bookmarks: [] }, { id: generateId(), name: "我的喜欢", bookmarks: [] }, { id: generateId(), name: "默认收藏", bookmarks: [] } ]; allFolderId = folders[0].id; favoritesFolderId = folders[1].id; defaultFolderId = folders[2].id; currentFolderId = allFolderId; lastUsedFolderId = defaultFolderId; }
+    function clearAll() { if (confirm("清空所有数据？不可恢复！")) { initEmptyData(); saveToDB(); renderAll(); updateFolderSelect(); } }
+    function setViewStyle(s) { currentViewStyle = s; saveToDB(); renderBookmarks(); document.querySelectorAll(".style-option").forEach(opt => { if (opt.getAttribute("data-style") === s) opt.classList.add("active"); else opt.classList.remove("active"); }); }
+    function renderAll() { renderSidebar(); renderBookmarks(); }
+    function deleteBookmarkWithDialog(bookmarkId, sourceName, title) { const targetFolder = folders.find(f => f.name === sourceName) || folders.find(f => f.bookmarks.some(b => b.id === bookmarkId)); const otherFolders = folders.filter(f => !isSystemFolder(f.name) && f.id !== targetFolder?.id); const currentFolderObj = getCurrentFolder(); const currentTarget = currentFolderObj && currentFolderObj.id !== targetFolder?.id && !isSystemFolder(currentFolderObj.name) ? currentFolderObj : null; let optionsHtml = '<option value="">请选择目标文件夹</option>'; if (currentTarget) optionsHtml += `<option value="${currentTarget.id}">📁 ${escapeHtml(currentTarget.name)} (当前)</option>`; [...otherFolders, folders.find(f => f.id === defaultFolderId)].forEach(f => { if (f && f.id !== targetFolder?.id && (!currentTarget || f.id !== currentTarget.id)) optionsHtml += `<option value="${f.id}">📁 ${escapeHtml(f.name)} (${f.bookmarks.length})</option>`; }); showDeleteDialog('删除收藏', `确定要删除收藏 "${escapeHtml(title)}" 吗？`, optionsHtml, (targetId) => { if (targetId) { const target = folders.find(f => f.id === targetId); const source = targetFolder; const bookmark = source?.bookmarks.find(b => b.id === bookmarkId); if (target && source && bookmark) { source.bookmarks = source.bookmarks.filter(b => b.id !== bookmarkId); target.bookmarks.push(bookmark); renderAll(); saveToDB(); } } else { deleteBookmarkById(bookmarkId); } }, () => { deleteBookmarkById(bookmarkId); }, () => {}); }
+    function deleteBookmarkById(id) { for(let f of folders) { const idx = f.bookmarks.findIndex(b=>b.id===id); if(idx!==-1) { f.bookmarks.splice(idx,1); renderAll(); saveToDB(); return; } } }
+    async function reloadAllData() { await loadFromDB(); ensureSystemFolders(); if (!currentViewStyle) currentViewStyle = "waterfall"; updateFolderSelect(); renderAll(); }
+    
+    async function init() {
+        await initDB();
+        restoreCurrentUser();
+        await loadFromDB();
+        ensureSystemFolders();
+        if (!currentViewStyle) currentViewStyle = "waterfall";
+        updateFolderSelect();
+        renderAll();
+        document.getElementById("settingsToggleBtn").onclick = (e) => { e.stopPropagation(); document.getElementById("settingsPanel").classList.toggle("active"); };
+        document.querySelectorAll(".style-option").forEach(opt => opt.addEventListener("click", () => { setViewStyle(opt.getAttribute("data-style")); document.getElementById("settingsPanel").classList.remove("active"); }));
+        document.addEventListener("click", (e) => { if (!e.target.closest("#settingsPanel") && !e.target.closest("#settingsToggleBtn")) document.getElementById("settingsPanel").classList.remove("active"); });
+        document.getElementById("createFolderBtn").onclick = addFolder;
+        document.getElementById("openAddModalBtn").onclick = () => showAddEditModal();
+        document.getElementById("toggleNewBadgeBtn").onclick = toggleNewTags;
+        document.getElementById("exportDataBtn").onclick = exportData;
+        document.getElementById("importDataBtn").onclick = triggerImport;
+        document.getElementById("demoDataBtn").onclick = loadDemoData;
+        document.getElementById("clearStorageBtn").onclick = clearAll;
+        document.addEventListener('click', (e) => {
+            const del = e.target.closest('.delete-action');
+            if (del) { e.preventDefault(); const id = del.getAttribute('data-id'); const src = del.getAttribute('data-source') || ""; const title = del.closest('.bookmark-card')?.querySelector('.card-title')?.innerText || "该收藏"; deleteBookmarkWithDialog(id, src, title); }
+            const edit = e.target.closest('.edit-action');
+            if (edit) { e.preventDefault(); const id = edit.getAttribute('data-id'); const src = edit.getAttribute('data-source') || ""; let targetFolder = null; if (src && src !== "未知") targetFolder = folders.find(f => f.name === src); else targetFolder = folders.find(f => f.bookmarks.some(b => b.id === id)); const bm = targetFolder?.bookmarks.find(b => b.id === id); if (bm) showAddEditModal(bm, targetFolder); }
+        });
+        window.addEventListener('resize', () => {
+            if (currentViewStyle === 'waterfall') {
+                if (resizeTimer) clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => renderBookmarks(), 150);
+            }
+        });
+        window.addEventListener("beforeunload", () => { if (currentFloatingWindow) { lastWindowPosition = { left: currentFloatingWindow.offsetLeft, top: currentFloatingWindow.offsetTop, width: currentFloatingWindow.offsetWidth, height: currentFloatingWindow.offsetHeight }; } saveToDB(); });
+    }
+    init();
+})();
+</script>
+</body>
+</html>
